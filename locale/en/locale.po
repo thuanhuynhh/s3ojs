@@ -1,0 +1,222 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-12-01T10:00:00+00:00\n"
+"PO-Revision-Date: 2023-12-01T10:00:00+00:00\n"
+"Language: en\n"
+
+msgid "plugins.generic.s3Storage.displayName"
+msgstr "S3 Storage Plugin"
+
+msgid "plugins.generic.s3Storage.description"
+msgstr "This plugin integrates S3-compatible storage for file management in OJS, supporting AWS S3, Wasabi, DigitalOcean Spaces and more, providing scalable and reliable cloud storage solution with hybrid mode and fallback mechanisms."
+
+msgid "plugins.generic.s3Storage.settings.title"
+msgstr "S3 Storage Settings"
+
+msgid "plugins.generic.s3Storage.settings.description"
+msgstr "Configure S3-compatible storage settings for file management. Supports AWS S3, Wasabi, DigitalOcean Spaces and other S3-compatible services."
+
+msgid "plugins.generic.s3Storage.settings.provider"
+msgstr "Storage Provider"
+
+msgid "plugins.generic.s3Storage.settings.provider.description"
+msgstr "Select your S3-compatible storage provider."
+
+msgid "plugins.generic.s3Storage.settings.customEndpoint"
+msgstr "Custom Endpoint (Optional)"
+
+msgid "plugins.generic.s3Storage.settings.customEndpoint.description"
+msgstr "Custom S3 endpoint URL for non-AWS providers (e.g., https://s3.wasabisys.com for Wasabi)."
+
+msgid "plugins.generic.s3Storage.settings.bucket"
+msgstr "S3 Bucket Name"
+
+msgid "plugins.generic.s3Storage.settings.bucket.description"
+msgstr "The name of your S3-compatible bucket where files will be stored."
+
+msgid "plugins.generic.s3Storage.settings.bucket.required"
+msgstr "S3 bucket name is required."
+
+msgid "plugins.generic.s3Storage.settings.key"
+msgstr "Access Key ID"
+
+msgid "plugins.generic.s3Storage.settings.key.description"
+msgstr "Your Access Key ID with permission to access the storage bucket."
+
+msgid "plugins.generic.s3Storage.settings.key.required"
+msgstr "Access Key ID is required."
+
+msgid "plugins.generic.s3Storage.settings.secret"
+msgstr "Secret Access Key"
+
+msgid "plugins.generic.s3Storage.settings.secret.description"
+msgstr "Your Secret Access Key corresponding to the Access Key ID."
+
+msgid "plugins.generic.s3Storage.settings.secret.required"
+msgstr "Secret Access Key is required."
+
+msgid "plugins.generic.s3Storage.settings.region"
+msgstr "Region"
+
+msgid "plugins.generic.s3Storage.settings.region.description"
+msgstr "The region where your storage bucket is located."
+
+msgid "plugins.generic.s3Storage.settings.region.required"
+msgstr "Region is required."
+
+msgid "plugins.generic.s3Storage.settings.hybridMode"
+msgstr "Enable Hybrid Mode"
+
+msgid "plugins.generic.s3Storage.settings.hybridMode.description"
+msgstr "Keep files stored both locally and on cloud storage for redundancy."
+
+msgid "plugins.generic.s3Storage.settings.fallbackEnabled"
+msgstr "Enable Fallback Mechanism"
+
+msgid "plugins.generic.s3Storage.settings.fallbackEnabled.description"
+msgstr "Use local storage when cloud storage is unavailable."
+
+msgid "plugins.generic.s3Storage.settings.autoSync"
+msgstr "Enable Auto Sync"
+
+msgid "plugins.generic.s3Storage.settings.autoSync.description"
+msgstr "Automatically sync OJS files to the configured storage bucket."
+
+msgid "plugins.generic.s3Storage.settings.cronEnabled"
+msgstr "Enable Cron Jobs"
+
+msgid "plugins.generic.s3Storage.settings.cronEnabled.description"
+msgstr "Enable scheduled tasks for maintenance and cleanup."
+
+msgid "plugins.generic.s3Storage.settings.cronFrequency"
+msgstr "Cron Job Frequency"
+
+msgid "plugins.generic.s3Storage.settings.cronFrequency.description"
+msgstr "How often to run maintenance tasks."
+
+msgid "plugins.generic.s3Storage.settings.cleanupOrphaned"
+msgstr "Auto-cleanup Orphaned Files"
+
+msgid "plugins.generic.s3Storage.settings.cleanupOrphaned.description"
+msgstr "Automatically delete unused or orphaned files from storage."
+
+msgid "plugins.generic.s3Storage.settings.cdnDomain"
+msgstr "CDN Domain (Optional)"
+
+msgid "plugins.generic.s3Storage.settings.cdnDomain.description"
+msgstr "Custom domain for serving files through CDN (e.g., CloudFront). Leave empty to use default URLs."
+
+msgid "plugins.generic.s3Storage.settings.useSSL"
+msgstr "Use SSL/HTTPS"
+
+msgid "plugins.generic.s3Storage.settings.useSSL.description"
+msgstr "Enable SSL/HTTPS for secure file transfers."
+
+msgid "plugins.generic.s3Storage.settings.publicRead"
+msgstr "Enable Public Read Access"
+
+msgid "plugins.generic.s3Storage.settings.publicRead.description"
+msgstr "Allow public read access to uploaded files. Disable for private content."
+
+msgid "plugins.generic.s3Storage.settings.connectionTest.failed"
+msgstr "Failed to connect to storage service. Please verify your credentials and configuration."
+
+msgid "plugins.generic.s3Storage.settings.connectionTest.success"
+msgstr "Successfully connected to storage service."
+
+msgid "plugins.generic.s3Storage.sync.title"
+msgstr "Media Library Sync"
+
+msgid "plugins.generic.s3Storage.sync.description"
+msgstr "Sync existing OJS files to the configured storage bucket."
+
+msgid "plugins.generic.s3Storage.sync.start"
+msgstr "Start Sync"
+
+msgid "plugins.generic.s3Storage.sync.inProgress"
+msgstr "Sync in progress..."
+
+msgid "plugins.generic.s3Storage.sync.completed"
+msgstr "Sync completed successfully."
+
+msgid "plugins.generic.s3Storage.sync.failed"
+msgstr "Sync failed. Please check the error logs."
+
+msgid "plugins.generic.s3Storage.cleanup.title"
+msgstr "Storage Cleanup"
+
+msgid "plugins.generic.s3Storage.cleanup.description"
+msgstr "Remove orphaned and unused files from storage."
+
+msgid "plugins.generic.s3Storage.cleanup.start"
+msgstr "Start Cleanup"
+
+msgid "plugins.generic.s3Storage.cleanup.inProgress"
+msgstr "Cleanup in progress..."
+
+msgid "plugins.generic.s3Storage.cleanup.completed"
+msgstr "Cleanup completed successfully."
+
+msgid "plugins.generic.s3Storage.cleanup.failed"
+msgstr "Cleanup failed. Please check the error logs."
+
+msgid "plugins.generic.s3Storage.cron.title"
+msgstr "Scheduled Tasks"
+
+msgid "plugins.generic.s3Storage.cron.description"
+msgstr "Configure automated maintenance tasks."
+
+msgid "plugins.generic.s3Storage.cron.frequency.hourly"
+msgstr "Hourly"
+
+msgid "plugins.generic.s3Storage.cron.frequency.daily"
+msgstr "Daily"
+
+msgid "plugins.generic.s3Storage.cron.frequency.weekly"
+msgstr "Weekly"
+
+msgid "plugins.generic.s3Storage.cron.frequency.monthly"
+msgstr "Monthly"
+
+msgid "plugins.generic.s3Storage.error.hybridFailed"
+msgstr "Hybrid mode operation failed. Falling back to single storage mode."
+
+msgid "plugins.generic.s3Storage.error.fallbackActivated"
+msgstr "Storage service unavailable. Fallback to local storage activated."
+
+msgid "plugins.generic.s3Storage.error.uploadFailed"
+msgstr "Failed to upload file to storage service."
+
+msgid "plugins.generic.s3Storage.error.deleteFailed"
+msgstr "Failed to delete file from storage service."
+
+msgid "plugins.generic.s3Storage.error.downloadFailed"
+msgstr "Failed to download file from storage service."
+
+msgid "plugins.generic.s3Storage.error.fileNotFound"
+msgstr "File not found in storage service."
+
+msgid "plugins.generic.s3Storage.error.bucketNotFound"
+msgstr "Storage bucket not found or not accessible."
+
+msgid "plugins.generic.s3Storage.error.permissionDenied"
+msgstr "Permission denied. Please check your credentials and bucket policies."
+
+msgid "plugins.generic.s3Storage.provider.aws"
+msgstr "Amazon S3"
+
+msgid "plugins.generic.s3Storage.provider.wasabi"
+msgstr "Wasabi"
+
+msgid "plugins.generic.s3Storage.provider.digitalocean"
+msgstr "DigitalOcean Spaces"
+
+msgid "plugins.generic.s3Storage.provider.custom"
+msgstr "Custom S3-Compatible Service" 

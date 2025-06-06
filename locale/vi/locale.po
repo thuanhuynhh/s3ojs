@@ -1,0 +1,222 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-12-01T10:00:00+00:00\n"
+"PO-Revision-Date: 2023-12-01T10:00:00+00:00\n"
+"Language: vi\n"
+
+msgid "plugins.generic.s3Storage.displayName"
+msgstr "Plugin Lưu trữ S3"
+
+msgid "plugins.generic.s3Storage.description"
+msgstr "Plugin này tích hợp lưu trữ tương thích S3 để quản lý tệp tin trong OJS, hỗ trợ AWS S3, Wasabi, DigitalOcean Spaces và nhiều dịch vụ khác, cung cấp giải pháp lưu trữ đám mây có thể mở rộng với chế độ lai và cơ chế dự phòng."
+
+msgid "plugins.generic.s3Storage.settings.title"
+msgstr "Cài đặt Lưu trữ S3"
+
+msgid "plugins.generic.s3Storage.settings.description"
+msgstr "Cấu hình cài đặt lưu trữ tương thích S3 để quản lý tệp tin. Hỗ trợ AWS S3, Wasabi, DigitalOcean Spaces và các dịch vụ tương thích S3 khác."
+
+msgid "plugins.generic.s3Storage.settings.provider"
+msgstr "Nhà cung cấp Lưu trữ"
+
+msgid "plugins.generic.s3Storage.settings.provider.description"
+msgstr "Chọn nhà cung cấp lưu trữ tương thích S3 của bạn."
+
+msgid "plugins.generic.s3Storage.settings.customEndpoint"
+msgstr "Endpoint Tùy chỉnh (Tùy chọn)"
+
+msgid "plugins.generic.s3Storage.settings.customEndpoint.description"
+msgstr "URL endpoint S3 tùy chỉnh cho các nhà cung cấp không phải AWS (vd: https://s3.wasabisys.com cho Wasabi)."
+
+msgid "plugins.generic.s3Storage.settings.bucket"
+msgstr "Tên Bucket S3"
+
+msgid "plugins.generic.s3Storage.settings.bucket.description"
+msgstr "Tên của bucket tương thích S3 nơi các tệp tin sẽ được lưu trữ."
+
+msgid "plugins.generic.s3Storage.settings.bucket.required"
+msgstr "Tên bucket S3 là bắt buộc."
+
+msgid "plugins.generic.s3Storage.settings.key"
+msgstr "Access Key ID"
+
+msgid "plugins.generic.s3Storage.settings.key.description"
+msgstr "Access Key ID của bạn có quyền truy cập bucket lưu trữ."
+
+msgid "plugins.generic.s3Storage.settings.key.required"
+msgstr "Access Key ID là bắt buộc."
+
+msgid "plugins.generic.s3Storage.settings.secret"
+msgstr "Secret Access Key"
+
+msgid "plugins.generic.s3Storage.settings.secret.description"
+msgstr "Secret Access Key tương ứng với Access Key ID."
+
+msgid "plugins.generic.s3Storage.settings.secret.required"
+msgstr "Secret Access Key là bắt buộc."
+
+msgid "plugins.generic.s3Storage.settings.region"
+msgstr "Khu vực"
+
+msgid "plugins.generic.s3Storage.settings.region.description"
+msgstr "Khu vực nơi bucket lưu trữ của bạn được đặt."
+
+msgid "plugins.generic.s3Storage.settings.region.required"
+msgstr "Khu vực là bắt buộc."
+
+msgid "plugins.generic.s3Storage.settings.hybridMode"
+msgstr "Bật Chế độ Lai"
+
+msgid "plugins.generic.s3Storage.settings.hybridMode.description"
+msgstr "Lưu trữ tệp tin cả ở local và cloud để dự phòng."
+
+msgid "plugins.generic.s3Storage.settings.fallbackEnabled"
+msgstr "Bật Cơ chế Dự phòng"
+
+msgid "plugins.generic.s3Storage.settings.fallbackEnabled.description"
+msgstr "Sử dụng lưu trữ local khi lưu trữ đám mây không khả dụng."
+
+msgid "plugins.generic.s3Storage.settings.autoSync"
+msgstr "Bật Đồng bộ Tự động"
+
+msgid "plugins.generic.s3Storage.settings.autoSync.description"
+msgstr "Tự động đồng bộ các tệp tin OJS tới bucket lưu trữ đã cấu hình."
+
+msgid "plugins.generic.s3Storage.settings.cronEnabled"
+msgstr "Bật Cron Jobs"
+
+msgid "plugins.generic.s3Storage.settings.cronEnabled.description"
+msgstr "Bật các tác vụ được lên lịch để bảo trì và dọn dẹp."
+
+msgid "plugins.generic.s3Storage.settings.cronFrequency"
+msgstr "Tần suất Cron Job"
+
+msgid "plugins.generic.s3Storage.settings.cronFrequency.description"
+msgstr "Tần suất chạy các tác vụ bảo trì."
+
+msgid "plugins.generic.s3Storage.settings.cleanupOrphaned"
+msgstr "Tự động Dọn dẹp Files Mồ côi"
+
+msgid "plugins.generic.s3Storage.settings.cleanupOrphaned.description"
+msgstr "Tự động xóa các tệp tin không sử dụng hoặc mồ côi khỏi lưu trữ."
+
+msgid "plugins.generic.s3Storage.settings.cdnDomain"
+msgstr "Tên miền CDN (Tùy chọn)"
+
+msgid "plugins.generic.s3Storage.settings.cdnDomain.description"
+msgstr "Tên miền tùy chỉnh để phục vụ tệp tin thông qua CDN (vd: CloudFront). Để trống để sử dụng URL mặc định."
+
+msgid "plugins.generic.s3Storage.settings.useSSL"
+msgstr "Sử dụng SSL/HTTPS"
+
+msgid "plugins.generic.s3Storage.settings.useSSL.description"
+msgstr "Bật SSL/HTTPS để truyền tệp tin an toàn."
+
+msgid "plugins.generic.s3Storage.settings.publicRead"
+msgstr "Cho phép Truy cập Đọc Công khai"
+
+msgid "plugins.generic.s3Storage.settings.publicRead.description"
+msgstr "Cho phép truy cập đọc công khai đến các tệp tin đã tải lên. Tắt cho nội dung riêng tư."
+
+msgid "plugins.generic.s3Storage.settings.connectionTest.failed"
+msgstr "Không thể kết nối đến dịch vụ lưu trữ. Vui lòng xác minh thông tin đăng nhập và cấu hình của bạn."
+
+msgid "plugins.generic.s3Storage.settings.connectionTest.success"
+msgstr "Kết nối thành công đến dịch vụ lưu trữ."
+
+msgid "plugins.generic.s3Storage.sync.title"
+msgstr "Đồng bộ Thư viện Media"
+
+msgid "plugins.generic.s3Storage.sync.description"
+msgstr "Đồng bộ các tệp tin OJS hiện có tới bucket lưu trữ đã cấu hình."
+
+msgid "plugins.generic.s3Storage.sync.start"
+msgstr "Bắt đầu Đồng bộ"
+
+msgid "plugins.generic.s3Storage.sync.inProgress"
+msgstr "Đang đồng bộ..."
+
+msgid "plugins.generic.s3Storage.sync.completed"
+msgstr "Đồng bộ hoàn thành thành công."
+
+msgid "plugins.generic.s3Storage.sync.failed"
+msgstr "Đồng bộ thất bại. Vui lòng kiểm tra nhật ký lỗi."
+
+msgid "plugins.generic.s3Storage.cleanup.title"
+msgstr "Dọn dẹp Lưu trữ"
+
+msgid "plugins.generic.s3Storage.cleanup.description"
+msgstr "Xóa các tệp tin mồ côi và không sử dụng khỏi lưu trữ."
+
+msgid "plugins.generic.s3Storage.cleanup.start"
+msgstr "Bắt đầu Dọn dẹp"
+
+msgid "plugins.generic.s3Storage.cleanup.inProgress"
+msgstr "Đang dọn dẹp..."
+
+msgid "plugins.generic.s3Storage.cleanup.completed"
+msgstr "Dọn dẹp hoàn thành thành công."
+
+msgid "plugins.generic.s3Storage.cleanup.failed"
+msgstr "Dọn dẹp thất bại. Vui lòng kiểm tra nhật ký lỗi."
+
+msgid "plugins.generic.s3Storage.cron.title"
+msgstr "Tác vụ Lên lịch"
+
+msgid "plugins.generic.s3Storage.cron.description"
+msgstr "Cấu hình các tác vụ bảo trì tự động."
+
+msgid "plugins.generic.s3Storage.cron.frequency.hourly"
+msgstr "Hàng giờ"
+
+msgid "plugins.generic.s3Storage.cron.frequency.daily"
+msgstr "Hàng ngày"
+
+msgid "plugins.generic.s3Storage.cron.frequency.weekly"
+msgstr "Hàng tuần"
+
+msgid "plugins.generic.s3Storage.cron.frequency.monthly"
+msgstr "Hàng tháng"
+
+msgid "plugins.generic.s3Storage.error.hybridFailed"
+msgstr "Thao tác chế độ lai thất bại. Chuyển về chế độ lưu trữ đơn."
+
+msgid "plugins.generic.s3Storage.error.fallbackActivated"
+msgstr "Dịch vụ lưu trữ không khả dụng. Kích hoạt dự phòng sang lưu trữ local."
+
+msgid "plugins.generic.s3Storage.error.uploadFailed"
+msgstr "Không thể tải tệp tin lên dịch vụ lưu trữ."
+
+msgid "plugins.generic.s3Storage.error.deleteFailed"
+msgstr "Không thể xóa tệp tin khỏi dịch vụ lưu trữ."
+
+msgid "plugins.generic.s3Storage.error.downloadFailed"
+msgstr "Không thể tải tệp tin từ dịch vụ lưu trữ."
+
+msgid "plugins.generic.s3Storage.error.fileNotFound"
+msgstr "Không tìm thấy tệp tin trong dịch vụ lưu trữ."
+
+msgid "plugins.generic.s3Storage.error.bucketNotFound"
+msgstr "Không tìm thấy bucket lưu trữ hoặc không thể truy cập."
+
+msgid "plugins.generic.s3Storage.error.permissionDenied"
+msgstr "Quyền bị từ chối. Vui lòng kiểm tra thông tin đăng nhập và chính sách bucket của bạn."
+
+msgid "plugins.generic.s3Storage.provider.aws"
+msgstr "Amazon S3"
+
+msgid "plugins.generic.s3Storage.provider.wasabi"
+msgstr "Wasabi"
+
+msgid "plugins.generic.s3Storage.provider.digitalocean"
+msgstr "DigitalOcean Spaces"
+
+msgid "plugins.generic.s3Storage.provider.custom"
+msgstr "Dịch vụ Tương thích S3 Tùy chỉnh" 
