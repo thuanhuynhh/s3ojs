@@ -13,7 +13,6 @@
  */
 
 import('lib.pkp.classes.file.FileManager');
-require_once('lib/aws/aws-autoloader.php');
 
 use Aws\S3\S3Client;
 use Aws\Exception\AwsException;

@@ -13,6 +13,7 @@
  */
 
 import('lib.pkp.classes.plugins.GenericPlugin');
+require_once(dirname(__FILE__) . '/vendor/aws/aws-autoloader.php');
 
 class S3StoragePlugin extends GenericPlugin {
     

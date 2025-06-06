@@ -13,6 +13,7 @@
  */
 
 import('lib.pkp.classes.form.Form');
+use Aws\S3\S3Client;
 
 class S3StorageSettingsForm extends Form {
 
@@ -143,8 +144,6 @@ class S3StorageSettingsForm extends Form {
      */
     private function _testS3Connection() {
         try {
-            require_once('lib/aws/aws-autoloader.php');
-            use Aws\S3\S3Client;
             
             $provider = $this->getData('s3_provider');
             $customEndpoint = $this->getData('s3_custom_endpoint');

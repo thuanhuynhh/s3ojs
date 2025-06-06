@@ -33,34 +33,41 @@ This plugin integrates S3-compatible storage for Open Journal Systems (OJS) 3.4.
 
 ## Cài đặt / Installation
 
-### Qua file ZIP (khuyến nghị)
+### 1. Tải Plugin và SDK
 
-1. Tải phiên bản mới nhất từ trang [Releases](https://github.com/your-repo/s3Storage/releases).
-2. Đăng nhập vào OJS với quyền quản trị.
-3. Vào **Settings > Website > Plugins > Upload A New Plugin**.
-4. Tải file ZIP của plugin lên và làm theo hướng dẫn.
+1.  **Tải Plugin:** Tải phiên bản mới nhất của plugin từ trang [Releases](https://github.com/your-repo/s3Storage/releases) và giải nén.
+2.  **Tải AWS SDK for PHP:** Tải file ZIP của AWS SDK for PHP từ [trang chủ của AWS](https://aws.amazon.com/sdk-for-php/).
+3.  **Đặt SDK vào Plugin:**
+    *   Giải nén AWS SDK.
+    *   Bên trong thư mục plugin, tạo một thư mục con tên là `vendor`.
+    *   Sao chép toàn bộ nội dung của SDK đã giải nén vào thư mục `vendor/`.
+    *   Cấu trúc cuối cùng phải trông giống như sau:
+        ```
+        s3Storage/
+        ├── vendor/
+        │   ├── aws-autoloader.php
+        │   ├── Aws/
+        │   ├── GuzzleHttp/
+        │   └── ... (các thư mục khác của SDK)
+        ├── S3FileManager.inc.php
+        ├── S3StoragePlugin.inc.php
+        └── ... (các file khác của plugin)
+        ```
 
-### Qua Git (cho nhà phát triển)
-```bash
-cd plugins/generic/
-git clone https://github.com/your-repo/s3Storage.git
-```
+### 2. Tải Plugin lên OJS
 
-### Cài đặt dependencies
-Sau khi có mã nguồn, chạy lệnh sau từ thư mục của plugin:
-```bash
-cd plugins/generic/s3Storage/
-composer install --no-dev
-```
+1.  Nén toàn bộ thư mục `s3Storage` (bao gồm cả thư mục `vendor` bên trong) thành một file ZIP.
+2.  Đăng nhập vào OJS với quyền quản trị.
+3.  Vào **Settings > Website > Plugins > Upload A New Plugin**.
+4.  Tải file ZIP bạn vừa tạo lên và làm theo hướng dẫn.
 
-### Kích hoạt plugin
-1. Đăng nhập vào OJS với quyền quản trị.
-2. Vào **Settings > Website > Plugins**.
-3. Tìm "S3 Storage Plugin" trong danh sách Generic Plugins.
-4. Nhấp **Enable** để kích hoạt.
+### 3. Kích hoạt Plugin
+1.  Vào **Settings > Website > Plugins**.
+2.  Tìm "S3 Storage Plugin" trong danh sách Generic Plugins.
+3.  Nhấp **Enable** để kích hoạt.
 
 ### Cài đặt qua dòng lệnh (CLI)
-Bạn có thể cài đặt và kích hoạt plugin qua CLI. Chạy các lệnh sau từ thư mục gốc của OJS:
+Sau khi đã đặt SDK vào đúng vị trí như Bước 1:
 ```bash
 # Cài đặt hoặc cập nhật plugin
 php lib/pkp/tools/installPluginVersion.php plugins/generic/s3Storage/version.xml
