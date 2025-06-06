@@ -2,6 +2,30 @@
 	$(function() {ldelim}
 		$('#s3StorageSettings').pkpHandler('$.pkp.controllers.form.AjaxFormHandler');
 		
+		var regionsByProvider = {$s3RegionsByProvider|default:'{}'};
+		var currentRegion = '{$s3_region|escape:"javascript"}';
+
+		function updateRegionOptions(provider) {
+			var regions = regionsByProvider[provider] || {};
+			var regionSelect = $('#s3_region');
+			regionSelect.empty();
+			
+			if (Object.keys(regions).length === 0) {
+				regionSelect.append($('<option></option>').attr('value', '').text('N/A'));
+				regionSelect.prop('disabled', true);
+			} else {
+				$.each(regions, function(value, label) {
+					regionSelect.append($('<option></option>').attr('value', value).text(label));
+				});
+				regionSelect.prop('disabled', false);
+			}
+			
+			// Try to re-select the current region if it exists in the new list
+			if (regionSelect.find('option[value="' + currentRegion + '"]').length) {
+				regionSelect.val(currentRegion);
+			}
+		}
+		
 		// Provider change handler
 		$('#s3_provider').change(function() {
 			var provider = $(this).val();
@@ -10,10 +34,8 @@
 			} else {
 				$('#s3_custom_endpoint_section').hide();
 			}
-		});
-		
-		// Initialize provider visibility
-		$('#s3_provider').trigger('change');
+			updateRegionOptions(provider);
+		}).trigger('change');
 	{rdelim});
 </script>
 
@@ -50,7 +72,7 @@
 		{/fbvFormSection}
 
 		{fbvFormSection title="plugins.generic.s3Storage.settings.region" for="s3_region" required=true}
-			{fbvElement type="select" id="s3_region" from=$s3Regions selected=$s3_region translate=false label="plugins.generic.s3Storage.settings.region.description" required=true}
+			{fbvElement type="select" id="s3_region" selected=$s3_region translate=false label="plugins.generic.s3Storage.settings.region.description" required=true}
 		{/fbvFormSection}
 
 		<h4>Advanced Features</h4>
@@ -71,10 +93,6 @@
 
 		{fbvFormSection list=true}
 			{fbvElement type="checkbox" id="s3_cron_enabled" checked=$s3_cron_enabled label="plugins.generic.s3Storage.settings.cronEnabled.description"}
-		{/fbvFormSection}
-
-		{fbvFormSection title="plugins.generic.s3Storage.settings.cronFrequency" for="s3_cron_frequency"}
-			{fbvElement type="select" id="s3_cron_frequency" from=$cronFrequencies selected=$s3_cron_frequency translate=false label="plugins.generic.s3Storage.settings.cronFrequency.description"}
 		{/fbvFormSection}
 
 		{fbvFormSection list=true}
@@ -166,7 +184,7 @@ function testS3Connection() {
 			'csrfToken': '{$csrfToken}'
 		},
 		function(data) {
-			if (data.status) {
+			if (data.status && data.content.status) {
 				$('#connectionResult').html('<div class="pkp_notification pkp_notification_success">' +
 					'{translate key="plugins.generic.s3Storage.settings.connectionTest.success"}' + '</div>');
 			} else {

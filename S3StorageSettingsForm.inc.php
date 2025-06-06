@@ -56,7 +56,6 @@ class S3StorageSettingsForm extends Form {
             's3_fallback_enabled' => $this->_plugin->getSetting($this->_contextId, 's3_fallback_enabled'),
             's3_auto_sync' => $this->_plugin->getSetting($this->_contextId, 's3_auto_sync'),
             's3_cron_enabled' => $this->_plugin->getSetting($this->_contextId, 's3_cron_enabled'),
-            's3_cron_frequency' => $this->_plugin->getSetting($this->_contextId, 's3_cron_frequency') ?: 'daily',
             's3_cleanup_orphaned' => $this->_plugin->getSetting($this->_contextId, 's3_cleanup_orphaned'),
             's3_cdn_domain' => $this->_plugin->getSetting($this->_contextId, 's3_cdn_domain'),
             's3_use_ssl' => $this->_plugin->getSetting($this->_contextId, 's3_use_ssl'),
@@ -79,7 +78,6 @@ class S3StorageSettingsForm extends Form {
             's3_fallback_enabled',
             's3_auto_sync',
             's3_cron_enabled',
-            's3_cron_frequency',
             's3_cleanup_orphaned',
             's3_cdn_domain',
             's3_use_ssl',
@@ -95,8 +93,7 @@ class S3StorageSettingsForm extends Form {
         $templateMgr = TemplateManager::getManager($request);
         $templateMgr->assign('pluginName', $this->_plugin->getName());
         $templateMgr->assign('s3Providers', $this->_getS3Providers());
-        $templateMgr->assign('s3Regions', $this->_getS3Regions());
-        $templateMgr->assign('cronFrequencies', $this->_getCronFrequencies());
+        $templateMgr->assign('s3RegionsByProvider', json_encode($this->_getS3RegionsByProvider()));
         return parent::fetch($request, $template, $display);
     }
 
@@ -114,7 +111,6 @@ class S3StorageSettingsForm extends Form {
         $this->_plugin->updateSetting($this->_contextId, 's3_fallback_enabled', $this->getData('s3_fallback_enabled'), 'bool');
         $this->_plugin->updateSetting($this->_contextId, 's3_auto_sync', $this->getData('s3_auto_sync'), 'bool');
         $this->_plugin->updateSetting($this->_contextId, 's3_cron_enabled', $this->getData('s3_cron_enabled'), 'bool');
-        $this->_plugin->updateSetting($this->_contextId, 's3_cron_frequency', $this->getData('s3_cron_frequency'), 'string');
         $this->_plugin->updateSetting($this->_contextId, 's3_cleanup_orphaned', $this->getData('s3_cleanup_orphaned'), 'bool');
         $this->_plugin->updateSetting($this->_contextId, 's3_cdn_domain', trim($this->getData('s3_cdn_domain'), "\"\';"), 'string');
         $this->_plugin->updateSetting($this->_contextId, 's3_use_ssl', $this->getData('s3_use_ssl'), 'bool');
@@ -212,55 +208,32 @@ class S3StorageSettingsForm extends Form {
     }
 
     /**
-     * Get available regions for different providers
+     * Get available regions for different providers, structured for dynamic select
      * @return array
      */
-    private function _getS3Regions() {
-        return array(
-            // AWS regions
-            'us-east-1' => 'US East (N. Virginia)',
-            'us-east-2' => 'US East (Ohio)',
-            'us-west-1' => 'US West (N. California)',
-            'us-west-2' => 'US West (Oregon)',
-            'ca-central-1' => 'Canada (Central)',
-            'eu-central-1' => 'Europe (Frankfurt)',
-            'eu-west-1' => 'Europe (Ireland)',
-            'eu-west-2' => 'Europe (London)',
-            'eu-west-3' => 'Europe (Paris)',
-            'eu-north-1' => 'Europe (Stockholm)',
-            'ap-northeast-1' => 'Asia Pacific (Tokyo)',
-            'ap-northeast-2' => 'Asia Pacific (Seoul)',
-            'ap-northeast-3' => 'Asia Pacific (Osaka)',
-            'ap-southeast-1' => 'Asia Pacific (Singapore)',
-            'ap-southeast-2' => 'Asia Pacific (Sydney)',
-            'ap-south-1' => 'Asia Pacific (Mumbai)',
-            'sa-east-1' => 'South America (São Paulo)',
-            // Wasabi regions
-            'us-east-1' => 'Wasabi US East 1 (N. Virginia)',
-            'us-east-2' => 'Wasabi US East 2 (N. Virginia)',
-            'us-central-1' => 'Wasabi US Central 1 (Texas)',
-            'us-west-1' => 'Wasabi US West 1 (Oregon)',
-            'eu-central-1' => 'Wasabi EU Central 1 (Amsterdam)',
-            'ap-northeast-1' => 'Wasabi AP Northeast 1 (Tokyo)',
-            // DigitalOcean regions
-            'nyc3' => 'DigitalOcean NYC3',
-            'sfo3' => 'DigitalOcean SFO3',
-            'sgp1' => 'DigitalOcean SGP1',
-            'fra1' => 'DigitalOcean FRA1',
-            'ams3' => 'DigitalOcean AMS3',
-        );
-    }
-
-    /**
-     * Get cron frequency options
-     * @return array
-     */
-    private function _getCronFrequencies() {
-        return array(
-            'hourly' => __('plugins.generic.s3Storage.cron.frequency.hourly'),
-            'daily' => __('plugins.generic.s3Storage.cron.frequency.daily'),
-            'weekly' => __('plugins.generic.s3Storage.cron.frequency.weekly'),
-            'monthly' => __('plugins.generic.s3Storage.cron.frequency.monthly'),
-        );
+    private function _getS3RegionsByProvider() {
+        return [
+            'aws' => [
+                'us-east-1' => 'US East (N. Virginia)', 'us-east-2' => 'US East (Ohio)',
+                'us-west-1' => 'US West (N. California)', 'us-west-2' => 'US West (Oregon)',
+                'ca-central-1' => 'Canada (Central)', 'eu-central-1' => 'Europe (Frankfurt)',
+                'eu-west-1' => 'Europe (Ireland)', 'eu-west-2' => 'Europe (London)',
+                'eu-west-3' => 'Europe (Paris)', 'eu-north-1' => 'Europe (Stockholm)',
+                'ap-northeast-1' => 'Asia Pacific (Tokyo)', 'ap-northeast-2' => 'Asia Pacific (Seoul)',
+                'ap-northeast-3' => 'Asia Pacific (Osaka)', 'ap-southeast-1' => 'Asia Pacific (Singapore)',
+                'ap-southeast-2' => 'Asia Pacific (Sydney)', 'ap-south-1' => 'Asia Pacific (Mumbai)',
+                'sa-east-1' => 'South America (São Paulo)',
+            ],
+            'wasabi' => [
+                'us-east-1' => 'US East 1 (N. Virginia)', 'us-east-2' => 'US East 2 (N. Virginia)',
+                'us-central-1' => 'US Central 1 (Texas)', 'us-west-1' => 'US West 1 (Oregon)',
+                'eu-central-1' => 'EU Central 1 (Amsterdam)', 'ap-northeast-1' => 'AP Northeast 1 (Tokyo)',
+            ],
+            'digitalocean' => [
+                'nyc3' => 'NYC3', 'sfo3' => 'SFO3', 'sgp1' => 'SGP1',
+                'fra1' => 'FRA1', 'ams3' => 'AMS3',
+            ],
+            'custom' => [],
+        ];
     }
 } 

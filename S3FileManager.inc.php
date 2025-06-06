@@ -374,14 +374,23 @@ class S3FileManager extends FileManager {
         }
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($localPath, RecursiveDirectoryIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($localPath, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ($iterator as $file) {
+            $relativePath = str_replace($localPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $cloudFilePath = $cloudPath ? rtrim($cloudPath, '/') . '/' . $relativePath : $relativePath;
+            $cloudFilePath = str_replace(DIRECTORY_SEPARATOR, '/', $cloudFilePath);
+
+            if ($file->isDir()) {
+                // S3 does not have real directories, but some tools create
+                // zero-byte objects with a trailing slash to simulate them.
+                // We can choose to create them or not. Here we skip them.
+                continue;
+            }
+
             if ($file->isFile()) {
-                $relativePath = str_replace($localPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                $cloudFilePath = $cloudPath ? $cloudPath . '/' . $relativePath : $relativePath;
-                
                 if ($this->uploadToCloud($file->getPathname(), $cloudFilePath)) {
                     $results['success']++;
                     if ($deleteLocal) {
@@ -413,17 +422,22 @@ class S3FileManager extends FileManager {
             return $results;
         }
 
+        $validFilesSet = array_flip($validFiles);
+
         try {
-            $result = $this->s3Client->listObjects([
+            $paginator = $this->s3Client->getPaginator('ListObjectsV2', [
                 'Bucket' => $this->bucket,
             ]);
 
-            if (isset($result['Contents'])) {
+            foreach ($paginator as $result) {
+                if (empty($result['Contents'])) {
+                    continue;
+                }
+                
                 foreach ($result['Contents'] as $object) {
                     $key = $object['Key'];
                     
-                    // If valid files list is provided, check if file is in the list
-                    if (!empty($validFiles) && !in_array($key, $validFiles)) {
+                    if (!isset($validFilesSet[$key])) {
                         if ($this->deleteFromCloud($key)) {
                             $results['deleted']++;
                         } else {
@@ -455,14 +469,20 @@ class S3FileManager extends FileManager {
         // Get cloud stats
         if ($this->s3Client) {
             try {
-                $result = $this->s3Client->listObjects(['Bucket' => $this->bucket]);
-                
-                if (isset($result['Contents'])) {
-                    foreach ($result['Contents'] as $object) {
-                        $stats['cloud']['count']++;
-                        $stats['cloud']['size'] += $object['Size'];
+                $count = 0;
+                $size = 0;
+                $paginator = $this->s3Client->getPaginator('ListObjectsV2', ['Bucket' => $this->bucket]);
+                foreach ($paginator as $result) {
+                    if (isset($result['Contents'])) {
+                        foreach ($result['Contents'] as $object) {
+                            $count++;
+                            $size += $object['Size'];
+                        }
                     }
                 }
+                $stats['cloud']['count'] = $count;
+                $stats['cloud']['size'] = $size;
+
             } catch (AwsException $e) {
                 error_log('S3StoragePlugin: Failed to get cloud storage stats: ' . $e->getMessage());
             }
@@ -621,17 +641,19 @@ class S3FileManager extends FileManager {
         }
 
         try {
-            $result = $this->s3Client->listObjects([
+            $files = [];
+            $paginator = $this->s3Client->getPaginator('ListObjectsV2', [
                 'Bucket' => $this->bucket,
                 'Prefix' => $directory,
             ]);
 
-            $files = array();
-            if (isset($result['Contents'])) {
-                foreach ($result['Contents'] as $object) {
-                    $filename = basename($object['Key']);
-                    if (!$filter || preg_match($filter, $filename)) {
-                        $files[] = $filename;
+            foreach ($paginator as $result) {
+                if (isset($result['Contents'])) {
+                    foreach ($result['Contents'] as $object) {
+                        $filename = basename($object['Key']);
+                        if (!$filter || preg_match($filter, $filename)) {
+                            $files[] = $filename;
+                        }
                     }
                 }
             }
@@ -692,23 +714,34 @@ class S3FileManager extends FileManager {
         }
 
         try {
-            $result = $this->s3Client->listObjects([
+            $paginator = $this->s3Client->getPaginator('ListObjectsV2', [
                 'Bucket' => $this->bucket,
                 'Prefix' => rtrim($dirPath, '/') . '/',
             ]);
 
-            if (isset($result['Contents'])) {
-                $objects = array();
-                foreach ($result['Contents'] as $object) {
-                    $objects[] = array('Key' => $object['Key']);
-                }
+            $objectsToDelete = [];
+            foreach ($paginator as $result) {
+                if (isset($result['Contents'])) {
+                    foreach ($result['Contents'] as $object) {
+                        $objectsToDelete[] = ['Key' => $object['Key']];
 
-                if (!empty($objects)) {
-                    $this->s3Client->deleteObjects([
-                        'Bucket' => $this->bucket,
-                        'Delete' => array('Objects' => $objects),
-                    ]);
+                        // deleteObjects supports up to 1000 keys at a time
+                        if (count($objectsToDelete) === 1000) {
+                            $this->s3Client->deleteObjects([
+                                'Bucket' => $this->bucket,
+                                'Delete' => ['Objects' => $objectsToDelete],
+                            ]);
+                            $objectsToDelete = [];
+                        }
+                    }
                 }
+            }
+
+            if (!empty($objectsToDelete)) {
+                $this->s3Client->deleteObjects([
+                    'Bucket' => $this->bucket,
+                    'Delete' => ['Objects' => $objectsToDelete],
+                ]);
             }
 
             return true;
@@ -724,6 +757,9 @@ class S3FileManager extends FileManager {
      * @return string MIME type
      */
     private function getMimeType($filePath) {
+        if (!function_exists('finfo_open')) {
+            return 'application/octet-stream';
+        }
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mimeType = finfo_file($finfo, $filePath);
         finfo_close($finfo);

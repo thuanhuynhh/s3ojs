@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE scheduled_tasks SYSTEM "../../../lib/pkp/dtd/scheduledTasks.dtd">
+
+<!--
+  * plugins/generic/s3Storage/registry/scheduledTasks.xml
+  *
+  * Copyright (c) 2023 OJS/PKP
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
+  *
+  * Scheduled tasks registry file.
+  -->
+
+<scheduled_tasks>
+    <task class="plugins.generic.s3Storage.S3StorageCronHandler" />
+</scheduled_tasks> 

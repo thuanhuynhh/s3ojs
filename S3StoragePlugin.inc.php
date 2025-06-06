@@ -27,9 +27,6 @@ class S3StoragePlugin extends GenericPlugin {
             // Register the S3 file manager
             HookRegistry::register('FileManager::getFileManager', array($this, 'getFileManager'));
             
-            // Add S3 settings to the file settings form
-            HookRegistry::register('Form::config::before', array($this, 'addS3Settings'));
-            
             // Register scheduled tasks hook
             HookRegistry::register('Scheduler::execute', array($this, 'scheduledTasks'));
             
@@ -327,173 +324,22 @@ class S3StoragePlugin extends GenericPlugin {
      * @return array List of valid file paths
      */
     private function getValidFilesFromDatabase($context) {
-        $validFiles = array();
-        
-        // This would need to be implemented based on OJS database structure
-        // Get files from submission_files, galley_files, etc.
+        $validFiles = [];
+        $contextId = $context->getId();
+
+        // Submission files (includes galleys, artwork, etc.)
         $submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
-        $submissionFiles = $submissionFileDao->getByContextId($context->getId());
-        
+        /** @var DAOResultFactory $submissionFiles */
+        $submissionFiles = $submissionFileDao->getByContextId($contextId);
         while ($submissionFile = $submissionFiles->next()) {
-            if ($submissionFile->getData('path')) {
-                $validFiles[] = $submissionFile->getData('path');
+            /** @var SubmissionFile $submissionFile */
+            $path = $submissionFile->getData('path');
+            if ($path) {
+                $validFiles[] = $path;
             }
         }
-        
-        return $validFiles;
-    }
 
-    /**
-     * Add S3 settings to the form config
-     * @param $hookName string
-     * @param $form FormComponent
-     */
-    public function addS3Settings($hookName, $form) {
-        if ($form->id !== FORM_FILE_SETTINGS) {
-            return;
-        }
-
-        $context = Application::get()->getRequest()->getContext();
-        if (!$context || !$this->getEnabled($context->getId())) {
-            return;
-        }
-
-        $form->addGroup([
-            'id' => 's3_settings',
-            'label' => __('plugins.generic.s3Storage.settings.title'),
-            'description' => __('plugins.generic.s3Storage.settings.description'),
-        ])
-        ->addField(new \PKP\components\forms\FieldSelect('s3_provider', [
-            'label' => __('plugins.generic.s3Storage.settings.provider'),
-            'description' => __('plugins.generic.s3Storage.settings.provider.description'),
-            'value' => $this->getSetting($context->getId(), 's3_provider'),
-            'groupId' => 's3_settings',
-            'options' => [
-                ['value' => 'aws', 'label' => __('plugins.generic.s3Storage.provider.aws')],
-                ['value' => 'wasabi', 'label' => __('plugins.generic.s3Storage.provider.wasabi')],
-                ['value' => 'digitalocean', 'label' => __('plugins.generic.s3Storage.provider.digitalocean')],
-                ['value' => 'custom', 'label' => __('plugins.generic.s3Storage.provider.custom')],
-            ],
-        ]))
-        ->addField(new \PKP\components\forms\FieldText('s3_custom_endpoint', [
-            'label' => __('plugins.generic.s3Storage.settings.customEndpoint'),
-            'description' => __('plugins.generic.s3Storage.settings.customEndpoint.description'),
-            'value' => $this->getSetting($context->getId(), 's3_custom_endpoint'),
-            'groupId' => 's3_settings',
-        ]))
-        ->addField(new \PKP\components\forms\FieldText('s3_bucket', [
-            'label' => __('plugins.generic.s3Storage.settings.bucket'),
-            'description' => __('plugins.generic.s3Storage.settings.bucket.description'),
-            'value' => $this->getSetting($context->getId(), 's3_bucket'),
-            'groupId' => 's3_settings',
-        ]))
-        ->addField(new \PKP\components\forms\FieldText('s3_key', [
-            'label' => __('plugins.generic.s3Storage.settings.key'),
-            'description' => __('plugins.generic.s3Storage.settings.key.description'),
-            'value' => $this->getSetting($context->getId(), 's3_key'),
-            'groupId' => 's3_settings',
-        ]))
-        ->addField(new \PKP\components\forms\FieldText('s3_secret', [
-            'label' => __('plugins.generic.s3Storage.settings.secret'),
-            'description' => __('plugins.generic.s3Storage.settings.secret.description'),
-            'value' => $this->getSetting($context->getId(), 's3_secret'),
-            'groupId' => 's3_settings',
-            'inputType' => 'password',
-        ]))
-        ->addField(new \PKP\components\forms\FieldSelect('s3_region', [
-            'label' => __('plugins.generic.s3Storage.settings.region'),
-            'description' => __('plugins.generic.s3Storage.settings.region.description'),
-            'value' => $this->getSetting($context->getId(), 's3_region'),
-            'groupId' => 's3_settings',
-            'options' => $this->getRegionOptions(),
-        ]))
-        ->addField(new \PKP\components\forms\FieldOptions('s3_hybrid_mode', [
-            'label' => __('plugins.generic.s3Storage.settings.hybridMode'),
-            'description' => __('plugins.generic.s3Storage.settings.hybridMode.description'),
-            'value' => $this->getSetting($context->getId(), 's3_hybrid_mode'),
-            'groupId' => 's3_settings',
-            'type' => 'checkbox',
-        ]))
-        ->addField(new \PKP\components\forms\FieldOptions('s3_fallback_enabled', [
-            'label' => __('plugins.generic.s3Storage.settings.fallbackEnabled'),
-            'description' => __('plugins.generic.s3Storage.settings.fallbackEnabled.description'),
-            'value' => $this->getSetting($context->getId(), 's3_fallback_enabled'),
-            'groupId' => 's3_settings',
-            'type' => 'checkbox',
-        ]))
-        ->addField(new \PKP\components\forms\FieldOptions('s3_auto_sync', [
-            'label' => __('plugins.generic.s3Storage.settings.autoSync'),
-            'description' => __('plugins.generic.s3Storage.settings.autoSync.description'),
-            'value' => $this->getSetting($context->getId(), 's3_auto_sync'),
-            'groupId' => 's3_settings',
-            'type' => 'checkbox',
-        ]))
-        ->addField(new \PKP\components\forms\FieldOptions('s3_cron_enabled', [
-            'label' => __('plugins.generic.s3Storage.settings.cronEnabled'),
-            'description' => __('plugins.generic.s3Storage.settings.cronEnabled.description'),
-            'value' => $this->getSetting($context->getId(), 's3_cron_enabled'),
-            'groupId' => 's3_settings',
-            'type' => 'checkbox',
-        ]))
-        ->addField(new \PKP\components\forms\FieldSelect('s3_cron_frequency', [
-            'label' => __('plugins.generic.s3Storage.settings.cronFrequency'),
-            'description' => __('plugins.generic.s3Storage.settings.cronFrequency.description'),
-            'value' => $this->getSetting($context->getId(), 's3_cron_frequency'),
-            'groupId' => 's3_settings',
-            'options' => [
-                ['value' => 'hourly', 'label' => __('plugins.generic.s3Storage.cron.frequency.hourly')],
-                ['value' => 'daily', 'label' => __('plugins.generic.s3Storage.cron.frequency.daily')],
-                ['value' => 'weekly', 'label' => __('plugins.generic.s3Storage.cron.frequency.weekly')],
-                ['value' => 'monthly', 'label' => __('plugins.generic.s3Storage.cron.frequency.monthly')],
-            ],
-        ]))
-        ->addField(new \PKP\components\forms\FieldOptions('s3_cleanup_orphaned', [
-            'label' => __('plugins.generic.s3Storage.settings.cleanupOrphaned'),
-            'description' => __('plugins.generic.s3Storage.settings.cleanupOrphaned.description'),
-            'value' => $this->getSetting($context->getId(), 's3_cleanup_orphaned'),
-            'groupId' => 's3_settings',
-            'type' => 'checkbox',
-        ]));
-    }
-
-    /**
-     * Get region options for different providers
-     * @return array
-     */
-    private function getRegionOptions() {
-        return [
-            // AWS regions
-            ['value' => 'us-east-1', 'label' => 'US East (N. Virginia)'],
-            ['value' => 'us-east-2', 'label' => 'US East (Ohio)'],
-            ['value' => 'us-west-1', 'label' => 'US West (N. California)'],
-            ['value' => 'us-west-2', 'label' => 'US West (Oregon)'],
-            ['value' => 'ca-central-1', 'label' => 'Canada (Central)'],
-            ['value' => 'eu-central-1', 'label' => 'Europe (Frankfurt)'],
-            ['value' => 'eu-west-1', 'label' => 'Europe (Ireland)'],
-            ['value' => 'eu-west-2', 'label' => 'Europe (London)'],
-            ['value' => 'eu-west-3', 'label' => 'Europe (Paris)'],
-            ['value' => 'eu-north-1', 'label' => 'Europe (Stockholm)'],
-            ['value' => 'ap-northeast-1', 'label' => 'Asia Pacific (Tokyo)'],
-            ['value' => 'ap-northeast-2', 'label' => 'Asia Pacific (Seoul)'],
-            ['value' => 'ap-northeast-3', 'label' => 'Asia Pacific (Osaka)'],
-            ['value' => 'ap-southeast-1', 'label' => 'Asia Pacific (Singapore)'],
-            ['value' => 'ap-southeast-2', 'label' => 'Asia Pacific (Sydney)'],
-            ['value' => 'ap-south-1', 'label' => 'Asia Pacific (Mumbai)'],
-            ['value' => 'sa-east-1', 'label' => 'South America (São Paulo)'],
-            // Wasabi regions
-            ['value' => 'us-east-1', 'label' => 'Wasabi US East 1 (N. Virginia)'],
-            ['value' => 'us-east-2', 'label' => 'Wasabi US East 2 (N. Virginia)'],
-            ['value' => 'us-central-1', 'label' => 'Wasabi US Central 1 (Texas)'],
-            ['value' => 'us-west-1', 'label' => 'Wasabi US West 1 (Oregon)'],
-            ['value' => 'eu-central-1', 'label' => 'Wasabi EU Central 1 (Amsterdam)'],
-            ['value' => 'ap-northeast-1', 'label' => 'Wasabi AP Northeast 1 (Tokyo)'],
-            // DigitalOcean regions
-            ['value' => 'nyc3', 'label' => 'DigitalOcean NYC3'],
-            ['value' => 'sfo3', 'label' => 'DigitalOcean SFO3'],
-            ['value' => 'sgp1', 'label' => 'DigitalOcean SGP1'],
-            ['value' => 'fra1', 'label' => 'DigitalOcean FRA1'],
-            ['value' => 'ams3', 'label' => 'DigitalOcean AMS3'],
-        ];
+        return array_unique($validFiles);
     }
 
     /**
@@ -509,4 +355,5 @@ class S3StoragePlugin extends GenericPlugin {
     public function getInstallEmailTemplateDataFile() {
         return ($this->getPluginPath() . '/locale/{$installedLocale}/emailTemplates.xml');
     }
+} 
 } 

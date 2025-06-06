@@ -36,11 +36,12 @@ class S3StorageCronHandler extends ScheduledTask {
      * @return boolean Success/failure
      */
     function executeActions() {
-        if (!$this->plugin || !$this->plugin->getEnabled()) {
+        if (!$this->plugin) {
+            $this->addExecutionLogEntry('S3 Storage plugin not loaded.', SCHEDULED_TASK_MESSAGE_TYPE_ERROR);
             return false;
         }
 
-        $this->addExecutionLogEntry('S3 Storage maintenance started', SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
+        $this->addExecutionLogEntry('S3 Storage maintenance process started.', SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
 
         $contextDao = Application::getContextDAO();
         $contexts = $contextDao->getAll();
@@ -50,52 +51,64 @@ class S3StorageCronHandler extends ScheduledTask {
         $errors = [];
 
         while ($context = $contexts->next()) {
-            if ($this->plugin->getEnabled($context->getId())) {
-                try {
-                    // Run sync if enabled
-                    if ($this->plugin->getSetting($context->getId(), 's3_auto_sync')) {
-                        $syncResults = $this->performSync($context);
+            // Run only for contexts where the plugin and cron jobs are enabled
+            if (!$this->plugin->getEnabled($context->getId()) || !$this->plugin->getSetting($context->getId(), 's3_cron_enabled')) {
+                continue;
+            }
+
+            $this->addExecutionLogEntry("Processing context: {$context->getLocalizedName()}", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
+
+            try {
+                // Run sync if auto-sync (via cron) is enabled
+                if ($this->plugin->getSetting($context->getId(), 's3_auto_sync')) {
+                    $syncResults = $this->performSync($context);
+                    if ($syncResults['success'] > 0) {
+                        $this->addExecutionLogEntry("Context {$context->getId()}: Synced {$syncResults['success']} files.", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
                         $totalSynced += $syncResults['success'];
-                        if (!empty($syncResults['errors'])) {
-                            $errors = array_merge($errors, $syncResults['errors']);
-                        }
                     }
-
-                    // Run cleanup if enabled
-                    if ($this->plugin->getSetting($context->getId(), 's3_cleanup_orphaned')) {
-                        $cleanupResults = $this->performCleanup($context);
-                        $totalCleaned += $cleanupResults['deleted'];
-                        if (!empty($cleanupResults['errors'])) {
-                            $errors = array_merge($errors, $cleanupResults['errors']);
-                        }
+                    if (!empty($syncResults['errors'])) {
+                        $errors = array_merge($errors, $syncResults['errors']);
                     }
-
-                    // Run storage health check
-                    $this->performHealthCheck($context);
-
-                } catch (Exception $e) {
-                    $errors[] = "Context {$context->getId()}: " . $e->getMessage();
-                    $this->addExecutionLogEntry($e->getMessage(), SCHEDULED_TASK_MESSAGE_TYPE_ERROR);
                 }
+
+                // Run cleanup if enabled
+                if ($this->plugin->getSetting($context->getId(), 's3_cleanup_orphaned')) {
+                    $cleanupResults = $this->performCleanup($context);
+                    if ($cleanupResults['deleted'] > 0) {
+                        $this->addExecutionLogEntry("Context {$context->getId()}: Cleaned {$cleanupResults['deleted']} orphaned files.", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
+                        $totalCleaned += $cleanupResults['deleted'];
+                    }
+                    if (!empty($cleanupResults['errors'])) {
+                        $errors = array_merge($errors, $cleanupResults['errors']);
+                    }
+                }
+
+                // Run storage health check
+                $this->performHealthCheck($context);
+
+            } catch (Exception $e) {
+                $errors[] = "Context {$context->getId()}: " . $e->getMessage();
+                $this->addExecutionLogEntry($e->getMessage(), SCHEDULED_TASK_MESSAGE_TYPE_ERROR);
             }
         }
 
-        // Log results
+        // Log overall results
         if ($totalSynced > 0) {
-            $this->addExecutionLogEntry("Synced {$totalSynced} files to cloud storage", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
+            $this->addExecutionLogEntry("Total files synced: {$totalSynced}", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
         }
 
         if ($totalCleaned > 0) {
-            $this->addExecutionLogEntry("Cleaned {$totalCleaned} orphaned files", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
+            $this->addExecutionLogEntry("Total orphaned files cleaned: {$totalCleaned}", SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
         }
 
         if (!empty($errors)) {
+            $this->addExecutionLogEntry('S3 Storage maintenance completed with errors.', SCHEDULED_TASK_MESSAGE_TYPE_ERROR);
             foreach ($errors as $error) {
                 $this->addExecutionLogEntry($error, SCHEDULED_TASK_MESSAGE_TYPE_ERROR);
             }
+        } else {
+            $this->addExecutionLogEntry('S3 Storage maintenance completed successfully.', SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
         }
-
-        $this->addExecutionLogEntry('S3 Storage maintenance completed', SCHEDULED_TASK_MESSAGE_TYPE_NOTICE);
 
         return empty($errors);
     }
@@ -207,36 +220,18 @@ class S3StorageCronHandler extends ScheduledTask {
      * @return array List of valid file paths
      */
     private function getValidFilesFromDatabase($context) {
-        $validFiles = array();
-        
-        // Get submission files
+        $validFiles = [];
+        $contextId = $context->getId();
+
+        // Submission files (includes galleys, artwork, etc.)
         $submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
-        $submissionFiles = $submissionFileDao->getByContextId($context->getId());
-        
+        /** @var DAOResultFactory $submissionFiles */
+        $submissionFiles = $submissionFileDao->getByContextId($contextId);
         while ($submissionFile = $submissionFiles->next()) {
-            if ($submissionFile->getData('path')) {
-                $validFiles[] = $submissionFile->getData('path');
-            }
-        }
-
-        // Get galley files
-        $galleyDao = DAORegistry::getDAO('ArticleGalleyDAO');
-        $galleys = $galleyDao->getByContextId($context->getId());
-        
-        while ($galley = $galleys->next()) {
-            if ($galley->getFile() && $galley->getFile()->getData('path')) {
-                $validFiles[] = $galley->getFile()->getData('path');
-            }
-        }
-
-        // Get issue files (covers, etc.)
-        $issueDao = DAORegistry::getDAO('IssueDAO');
-        $issues = $issueDao->getByJournalId($context->getId());
-        
-        while ($issue = $issues->next()) {
-            $coverImagePath = $issue->getCoverImage();
-            if ($coverImagePath) {
-                $validFiles[] = $coverImagePath;
+            /** @var SubmissionFile $submissionFile */
+            $path = $submissionFile->getData('path');
+            if ($path) {
+                $validFiles[] = $path;
             }
         }
 
@@ -264,39 +259,5 @@ class S3StorageCronHandler extends ScheduledTask {
         }
 
         return $bytes;
-    }
-
-    /**
-     * Check if maintenance should run based on frequency setting
-     * @param string $frequency
-     * @return boolean
-     */
-    public function shouldRunMaintenance($frequency) {
-        $lastRun = $this->plugin->getSetting(CONTEXT_ID_NONE, 's3_last_maintenance_run');
-        $now = time();
-        
-        if (!$lastRun) {
-            return true;
-        }
-        
-        switch ($frequency) {
-            case 'hourly':
-                return ($now - $lastRun) >= 3600; // 1 hour
-            case 'daily':
-                return ($now - $lastRun) >= 86400; // 24 hours
-            case 'weekly':
-                return ($now - $lastRun) >= 604800; // 7 days
-            case 'monthly':
-                return ($now - $lastRun) >= 2592000; // 30 days
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Update last maintenance run timestamp
-     */
-    public function updateLastMaintenanceRun() {
-        $this->plugin->updateSetting(CONTEXT_ID_NONE, 's3_last_maintenance_run', time(), 'int');
     }
 } 
