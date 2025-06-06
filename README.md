@@ -1,117 +1,120 @@
 # S3-Compatible Storage Plugin for OJS 3.4.0
 
-## Mô tả / Description
+## Description
 
-**Tiếng Việt:**
-Plugin này tích hợp lưu trữ tương thích S3 cho Open Journal Systems (OJS) 3.4.0, hỗ trợ nhiều nhà cung cấp như AWS S3, Wasabi, DigitalOcean Spaces và các dịch vụ tương thích S3 khác. Plugin cung cấp giải pháp lưu trữ đám mây với các tính năng tiên tiến như chế độ lai (hybrid mode), cơ chế dự phòng (fallback), đồng bộ tự động và quản lý tệp tin thông minh.
-
-**English:**
 This plugin integrates S3-compatible storage for Open Journal Systems (OJS) 3.4.0, supporting multiple providers including AWS S3, Wasabi, DigitalOcean Spaces, and other S3-compatible services. The plugin provides advanced cloud storage solutions with features like hybrid mode, fallback mechanisms, automatic synchronization, and intelligent file management.
 
-## Tính năng / Features
+## Features
 
-### 🔄 Core Features
-- **S3-Compatible Integration**: Hỗ trợ AWS S3, Wasabi, DigitalOcean Spaces và custom endpoints.
-- **Hybrid Mode**: Lưu trữ files cả ở local và cloud để dự phòng.
-- **Fallback Mechanism**: Tự động chuyển sang local storage khi cloud không khả dụng.
-- **Media Library Sync**: Đồng bộ tự động files OJS tới cloud storage.
+### Core Features
+- **S3-Compatible Integration**: Supports AWS S3, Wasabi, DigitalOcean Spaces, and custom endpoints.
+- **Hybrid Mode**: Stores files both locally and on the cloud for redundancy.
+- **Fallback Mechanism**: Automatically switches to local storage when cloud storage is unavailable.
+- **Media Library Sync**: Synchronizes existing OJS files to the configured cloud storage bucket.
 
-### ⚡ Advanced Features
-- **Custom Cron Jobs**: Lên lịch tác vụ bảo trì và dọn dẹp tự động.
-- **Efficient File Management**: Tự động xóa files mồ côi và không sử dụng một cách hiệu quả, ngay cả với các bucket lớn.
-- **Customizable Settings**: Giao diện cấu hình đầy đủ và dễ sử dụng với các tùy chọn động.
-- **Real-time Sync**: Đồng bộ files ngay khi upload (tùy chọn).
+### Advanced Features
+- **Scheduled Cron Jobs**: Schedules automated maintenance and cleanup tasks.
+- **Efficient File Management**: Automatically and efficiently deletes orphaned and unused files, even from large buckets.
+- **Customizable Settings**: A comprehensive and user-friendly settings interface with dynamic options.
+- **Real-time Sync**: Optionally synchronizes files immediately upon upload.
 
-### 🌐 Multi-language Support
-- Hỗ trợ đa ngôn ngữ (Tiếng Việt và Tiếng Anh).
-- Giao diện admin hoàn toàn được dịch.
+### Multi-language Support
+- Fully translated into English and Vietnamese.
 
-### 🔒 Security & Reliability
-- Mã hóa SSL/HTTPS cho truyền tải an toàn.
-- Kiểm tra kết nối và health checks.
-- Quản lý quyền truy cập chi tiết.
+### Security & Reliability
+- SSL/HTTPS encryption for secure data transfer.
+- Connection testing and health checks.
+- Detailed access control management.
 
-## Cài đặt / Installation
+## System Requirements
 
-### 1. Tải Plugin và SDK
+- **OJS**: 3.4.0 or newer
+- **PHP**: 7.3+ or 8.0+
+- **PHP Extensions**: curl, openssl, json, fileinfo
+- **Storage**: An S3-compatible bucket with appropriate access permissions.
+- **Network**: An active internet connection to access the storage service.
 
-1.  **Tải Plugin:** Tải phiên bản mới nhất của plugin từ trang [Releases](https://github.com/your-repo/s3Storage/releases) và giải nén.
-2.  **Tải AWS SDK for PHP:** Tải file ZIP của AWS SDK for PHP từ [trang chủ của AWS](https://aws.amazon.com/sdk-for-php/).
-3.  **Đặt SDK vào Plugin:**
-    *   Giải nén AWS SDK.
-    *   Bên trong thư mục plugin, tạo một thư mục con tên là `vendor`.
-    *   Sao chép toàn bộ nội dung của SDK đã giải nén vào thư mục `vendor/`.
-    *   Cấu trúc cuối cùng phải trông giống như sau:
+## Installation
+
+### 1. Download the Plugin and AWS SDK
+
+1.  **Download the Plugin:** Download the latest release of the plugin from the project's **Releases** page and unzip it.
+2.  **Download the AWS SDK for PHP:** Download the AWS SDK for PHP as a ZIP file from the [official AWS website](https://aws.amazon.com/sdk-for-php/).
+3.  **Place the SDK inside the Plugin Directory:**
+    *   Unzip the AWS SDK.
+    *   Inside the plugin's main directory (`s3Storage`), create a new subdirectory named `vendor`.
+    *   Copy the entire contents of the unzipped SDK into this `vendor/` directory.
+    *   The final directory structure should look like this:
         ```
         s3Storage/
         ├── vendor/
         │   ├── aws-autoloader.php
         │   ├── Aws/
         │   ├── GuzzleHttp/
-        │   └── ... (các thư mục khác của SDK)
+        │   └── ... (other SDK directories)
         ├── S3FileManager.inc.php
         ├── S3StoragePlugin.inc.php
-        └── ... (các file khác của plugin)
+        └── ... (other plugin files)
         ```
 
-### 2. Tải Plugin lên OJS
+### 2. Upload the Plugin to OJS
 
-1.  Nén toàn bộ thư mục `s3Storage` (bao gồm cả thư mục `vendor` bên trong) thành một file ZIP.
-2.  Đăng nhập vào OJS với quyền quản trị.
-3.  Vào **Settings > Website > Plugins > Upload A New Plugin**.
-4.  Tải file ZIP bạn vừa tạo lên và làm theo hướng dẫn.
+1.  Compress the entire `s3Storage` directory (which now includes the `vendor` directory) into a single ZIP file.
+2.  Log in to your OJS dashboard as an Administrator.
+3.  Navigate to **Settings > Website > Plugins > Upload A New Plugin**.
+4.  Upload the ZIP file you just created and follow the on-screen instructions.
 
-### 3. Kích hoạt Plugin
-1.  Vào **Settings > Website > Plugins**.
-2.  Tìm "S3 Storage Plugin" trong danh sách Generic Plugins.
-3.  Nhấp **Enable** để kích hoạt.
+### 3. Enable the Plugin
+1.  Navigate to **Settings > Website > Plugins**.
+2.  Find the "S3 Storage Plugin" in the Generic Plugins list.
+3.  Click **Enable**.
 
-### Cài đặt qua dòng lệnh (CLI)
-Sau khi đã đặt SDK vào đúng vị trí như Bước 1:
+### Installation via Command Line (CLI)
+After placing the SDK in the correct location as described in Step 1:
 ```bash
-# Cài đặt hoặc cập nhật plugin
+# Install or upgrade the plugin
 php lib/pkp/tools/installPluginVersion.php plugins/generic/s3Storage/version.xml
 
-# Kích hoạt plugin cho một journal (thay a_journal_path bằng đường dẫn của journal)
+# Enable the plugin for a specific journal (replace a_journal_path with your journal's path)
 php tools/plugin.php enable S3StoragePlugin a_journal_path
 ```
 
-## Cấu hình Cron Job
+## Cron Job Configuration
 
-Để các tác vụ tự động (dọn dẹp, đồng bộ) hoạt động, bạn cần cấu hình một cron job trên server của mình để thực thi script của OJS.
+For automated tasks (like cleanup and sync) to work, you need to configure a cron job on your server to execute the OJS scheduled tasks script.
 
-**Lệnh Cron Job:**
+**Cron Job Command:**
 ```bash
 * * * * * php /path/to/your/ojs/tools/runScheduledTasks.php
 ```
-*Lệnh này nên được chạy thường xuyên (ví dụ: mỗi giờ). Plugin sẽ tự quyết định có thực thi các tác vụ hay không dựa trên cài đặt của bạn trong giao diện admin.*
+*This command should be run frequently (e.g., every hour). The plugin will decide whether to execute its tasks based on your settings in the admin interface.*
 
-Trong trang cài đặt plugin, bạn có thể bật/tắt các tác vụ cron và chọn những hành động nào sẽ được thực hiện (dọn dẹp, đồng bộ).
+In the plugin's settings page, you can enable or disable cron jobs and select which actions (cleanup, sync) should be performed.
 
 ## Troubleshooting
 
-### Lỗi `The tar command is not available`
-Lỗi này xảy ra khi cài đặt plugin qua giao diện web nếu OJS không thể tìm thấy lệnh `tar` trên server của bạn.
-**Giải pháp:**
-1. Mở file `config.inc.php` trong thư mục gốc của OJS.
-2. Tìm đến phần `[cli]`.
-3. Cung cấp đường dẫn chính xác đến lệnh `tar`. Ví dụ:
+### Error: `The tar command is not available`
+This error can occur when installing the plugin via the web interface if OJS cannot find the `tar` command on your server.
+**Solution:**
+1. Open the `config.inc.php` file in your OJS root directory.
+2. Locate the `[cli]` section.
+3. Provide the correct path to your `tar` executable. For example:
    ```ini
    tar = /bin/tar
    ```
-Tham khảo thêm tại: [OJS Services](https://ojs-services.com/ojs-plugins/how-to-resolve-plugin-installation-error-in-ojs/)
+For more details, see: [OJS Services](https://ojs-services.com/ojs-plugins/how-to-resolve-plugin-installation-error-in-ojs/)
 
-### Vấn đề tương thích khi nâng cấp OJS
-Khi nâng cấp phiên bản OJS, một số plugin có thể không tương thích. Luôn kiểm tra Plugin Gallery và tài liệu của plugin trước khi nâng cấp.
-**Giải pháp:**
-- Luôn sao lưu hệ thống trước khi nâng cấp.
-- Nâng cấp plugin qua Plugin Gallery trong OJS để đảm bảo tính tương thích.
-- Nếu cài đặt thủ công, hãy chắc chắn bạn đang dùng phiên bản plugin hỗ trợ phiên bản OJS của bạn.
-Tham khảo thêm tại: [PKP Community Forum](http://forum.pkp.sfu.ca/t/commandline-upgrade-of-plugins/77385)
+### Compatibility issues when upgrading OJS
+When you upgrade your OJS version, some plugins may become incompatible. Always check the Plugin Gallery and the plugin's documentation before upgrading.
+**Solution:**
+- Always back up your system before an upgrade.
+- Upgrade plugins via the Plugin Gallery within OJS to ensure compatibility checks are performed.
+- If installing manually, ensure you are using a plugin version that supports your OJS version.
+For more details, see: [PKP Community Forum](http://forum.pkp.sfu.ca/t/commandline-upgrade-of-plugins/77385)
 
 ## Contributing
 
-Chúng tôi hoan nghênh mọi đóng góp! Vui lòng xem `CONTRIBUTING.md` để biết thêm chi tiết về cách đóng góp, báo lỗi và các tiêu chuẩn code.
+We welcome all contributions! Please see `CONTRIBUTING.md` for details on how to contribute, report bugs, and for our code standards.
 
 ## License
 
@@ -119,4 +122,4 @@ GNU General Public License v3.0
 
 ---
 
-**Lưu ý quan trọng:** Plugin này yêu cầu kiến thức cơ bản về cloud storage và quản trị OJS. Luôn sao lưu dữ liệu trước khi cài đặt hoặc thay đổi cấu hình. Để được hỗ trợ, vui lòng tạo một issue trên GitHub. 
+**Important Note:** This plugin requires a basic understanding of cloud storage and OJS administration. Always back up your data before installing or changing the configuration. For support, please create an issue on GitHub. 

@@ -13,7 +13,7 @@
 	<application>s3Storage</application>
 	<type>plugins.generic</type>
 	<release>1.0.0.0</release>
-	<date>2023-12-01</date>
+	<date>2025-06-06</date>
 	<lazy-load>1</lazy-load>
 	<class>S3StoragePlugin</class>
 </version> 
