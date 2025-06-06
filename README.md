@@ -36,29 +36,6 @@ This plugin integrates S3-compatible storage for Open Journal Systems (OJS) 3.4.
 
 ## Installation
 
-### 1. Download the Plugin and AWS SDK
-
-1.  **Download the Plugin:** Download the latest release of the plugin from the project's **Releases** page and unzip it.
-2.  **Download the AWS SDK for PHP:** Download the AWS SDK for PHP as a ZIP file from the [official AWS website](https://aws.amazon.com/sdk-for-php/).
-3.  **Place the SDK inside the Plugin Directory:**
-    *   Unzip the AWS SDK.
-    *   Inside the plugin's main directory (`s3Storage`), create a new subdirectory named `vendor`.
-    *   Copy the entire contents of the unzipped SDK into this `vendor/` directory.
-    *   The final directory structure should look like this:
-        ```
-        s3Storage/
-        ├── vendor/
-        │   ├── aws-autoloader.php
-        │   ├── Aws/
-        │   ├── GuzzleHttp/
-        │   └── ... (other SDK directories)
-        ├── S3FileManager.inc.php
-        ├── S3StoragePlugin.inc.php
-        └── ... (other plugin files)
-        ```
-
-### 2. Upload the Plugin to OJS
-
 1.  Compress the entire `s3Storage` directory (which now includes the `vendor` directory) into a single ZIP file.
 2.  Log in to your OJS dashboard as an Administrator.
 3.  Navigate to **Settings > Website > Plugins > Upload A New Plugin**.
