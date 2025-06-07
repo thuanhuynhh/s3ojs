@@ -190,13 +190,46 @@ class S3FileManager extends FileManager {
      * @return boolean Success/failure
      */
     public function downloadFile($sourceFile, $destFile) {
-        // Try cloud download first
-        if ($this->s3Client && $this->downloadFromCloud($sourceFile, $destFile)) {
-            return true;
+        // Attempt to redirect. If it fails, we MUST know why for debugging.
+        if ($this->s3Client) {
+            $tempUrl = $this->getTemporaryUrl($sourceFile);
+
+            if ($tempUrl) {
+                // Success! Redirect to S3 and terminate.
+                PKPApplication::get()->getRequest()->redirect($tempUrl);
+                exit;
+            } else {
+                // If we cannot get a temp URL, we should not silently fall back.
+                // Forcing an error message is better for debugging.
+                // We will try to re-run the command inside a try/catch to get the specific exception message.
+                $errorMessage = "Không thể lấy thông báo lỗi cụ thể từ AWS SDK.";
+                try {
+                    $cmd = $this->s3Client->getCommand('GetObject', [
+                        'Bucket' => $this->bucket,
+                        'Key' => $sourceFile,
+                    ]);
+                    $this->s3Client->createPresignedRequest($cmd, "+10 minutes");
+                } catch (AwsException $e) {
+                    $errorMessage = "Lý do (AWS SDK): " . htmlspecialchars($e->getMessage());
+                } catch (Exception $e) {
+                    $errorMessage = "Lý do (Lỗi Chung): " . htmlspecialchars($e->getMessage());
+                }
+
+                header('Content-Type: text/plain; charset=utf-8');
+                http_response_code(500);
+                die(
+                    "S3StoragePlugin - Lỗi Debug Tải Tệp:\n\n" .
+                    "Không thể tạo URL tạm thời để chuyển hướng đến S3.\n" .
+                    "Tệp: " . htmlspecialchars($sourceFile) . "\n\n" .
+                    $errorMessage . "\n\n" .
+                    "Vui lòng sao chép và gửi toàn bộ thông báo này để gỡ lỗi."
+                );
+            }
         }
 
-        // Fallback to local if hybrid mode or fallback enabled
-        if (($this->hybridMode || $this->fallbackEnabled) && file_exists($sourceFile)) {
+        // This fallback should only execute if the S3 client was not configured at all.
+        error_log('S3StoragePlugin: downloadFile fallback - S3 client not available.');
+        if (($this->hybridMode || $this->fallbackEnabled) && $this->localFileManager->fileExists($sourceFile)) {
             return $this->localFileManager->copyFile($sourceFile, $destFile);
         }
 

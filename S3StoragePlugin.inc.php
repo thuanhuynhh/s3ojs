@@ -278,8 +278,17 @@ class S3StoragePlugin extends GenericPlugin {
      * @param $args array
      */
     public function getFileManager($hookName, $args) {
-        if ($this->getEnabled()) {
-            $fileManager = $this->getS3FileManager();
+        $request = Application::get()->getRequest();
+        $context = $request->getContext();
+
+        if (!$context) {
+            // If we can't determine the context, we can't get the correct settings.
+            return false;
+        }
+        $contextId = $context->getId();
+        
+        if ($this->getEnabled($contextId)) {
+            $fileManager = $this->getS3FileManager($contextId);
             if ($fileManager) {
                 $args[0] = $fileManager;
                 return true;
@@ -391,6 +400,7 @@ class S3StoragePlugin extends GenericPlugin {
         $contextId = $context->getId();
 
         // Submission files (includes galleys, artwork, etc.)
+        import('lib.pkp.classes.submission.SubmissionFileDAO');
         $submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
         /** @var DAOResultFactory $submissionFiles */
         $submissionFiles = $submissionFileDao->getByContextId($contextId);
