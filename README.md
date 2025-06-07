@@ -36,12 +36,14 @@ This plugin integrates S3-compatible storage for Open Journal Systems (OJS) 3.4.
 
 ## Installation
 
+### Install the Plugin
+
 1.  Compress the entire `s3Storage` directory (which now includes the `vendor` directory) into a single ZIP file.
 2.  Log in to your OJS dashboard as an Administrator.
 3.  Navigate to **Settings > Website > Plugins > Upload A New Plugin**.
 4.  Upload the ZIP file you just created and follow the on-screen instructions.
 
-### 3. Enable the Plugin
+### Enable the Plugin
 1.  Navigate to **Settings > Website > Plugins**.
 2.  Find the "S3 Storage Plugin" in the Generic Plugins list.
 3.  Click **Enable**.

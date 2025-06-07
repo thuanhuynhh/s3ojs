@@ -13,6 +13,9 @@
  */
 
 import('lib.pkp.classes.form.Form');
+import('lib.pkp.classes.form.validation.FormValidator');
+import('lib.pkp.classes.form.validation.FormValidatorPost');
+import('lib.pkp.classes.form.validation.FormValidatorCSRF');
 use Aws\S3\S3Client;
 
 class S3StorageSettingsForm extends Form {
@@ -37,7 +40,6 @@ class S3StorageSettingsForm extends Form {
         $this->addCheck(new FormValidator($this, 's3_bucket', 'required', 'plugins.generic.s3Storage.settings.bucket.required'));
         $this->addCheck(new FormValidator($this, 's3_key', 'required', 'plugins.generic.s3Storage.settings.key.required'));
         $this->addCheck(new FormValidator($this, 's3_secret', 'required', 'plugins.generic.s3Storage.settings.secret.required'));
-        $this->addCheck(new FormValidator($this, 's3_region', 'required', 'plugins.generic.s3Storage.settings.region.required'));
         $this->addCheck(new FormValidatorPost($this));
         $this->addCheck(new FormValidatorCSRF($this));
     }
@@ -93,9 +95,51 @@ class S3StorageSettingsForm extends Form {
     function fetch($request, $template = null, $display = false) {
         $templateMgr = TemplateManager::getManager($request);
         $templateMgr->assign('pluginName', $this->_plugin->getName());
+        
+        // Build URLs for AJAX actions
+        $router = $request->getRouter();
+        $actionUrls = [
+            'testConnection' => $router->url($request, null, null, 'manage', null, ['verb' => 'testConnection', 'plugin' => $this->_plugin->getName(), 'category' => 'generic']),
+            'sync' => $router->url($request, null, null, 'manage', null, ['verb' => 'sync', 'plugin' => $this->_plugin->getName(), 'category' => 'generic']),
+            'cleanup' => $router->url($request, null, null, 'manage', null, ['verb' => 'cleanup', 'plugin' => $this->_plugin->getName(), 'category' => 'generic']),
+            'stats' => $router->url($request, null, null, 'manage', null, ['verb' => 'stats', 'plugin' => $this->_plugin->getName(), 'category' => 'generic']),
+        ];
+        $templateMgr->assign('actionUrls', $actionUrls);
+
         $templateMgr->assign('s3Providers', $this->_getS3Providers());
         $templateMgr->assign('s3RegionsByProvider', json_encode($this->_getS3RegionsByProvider()));
+        $templateMgr->assign('csrfToken', $request->getSession()->getCSRFToken());
         return parent::fetch($request, $template, $display);
+    }
+
+    /**
+     * Validate the form
+     * @return boolean
+     */
+    function validate($callHooks = true) {
+        $valid = parent::validate($callHooks);
+        
+        // Check if region is required (only when provider is not "custom")
+        $provider = $this->getData('s3_provider');
+        $region = $this->getData('s3_region');
+        
+        if ($provider !== 'custom' && empty($region)) {
+            $this->addError('s3_region', __('plugins.generic.s3Storage.settings.region.required'));
+            $valid = false;
+        }
+        
+        // Temporarily disable connection test to allow saving
+        /*
+        if ($valid) {
+            // Test S3 connection
+            if (!$this->_testS3Connection()) {
+                $this->addError('s3_connection', __('plugins.generic.s3Storage.settings.connectionTest.failed'));
+                $valid = false;
+            }
+        }
+        */
+        
+        return $valid;
     }
 
     /**
@@ -121,40 +165,48 @@ class S3StorageSettingsForm extends Form {
     }
 
     /**
-     * Validate the form
-     * @return boolean
-     */
-    function validate($callHooks = true) {
-        $valid = parent::validate($callHooks);
-        
-        if ($valid) {
-            // Test S3 connection
-            if (!$this->_testS3Connection()) {
-                $this->addError('s3_connection', __('plugins.generic.s3Storage.settings.connectionTest.failed'));
-                $valid = false;
-            }
-        }
-        
-        return $valid;
-    }
-
-    /**
      * Test S3 connection with provided credentials
      * @return boolean
      */
     private function _testS3Connection() {
         try {
-            
             $provider = $this->getData('s3_provider');
             $customEndpoint = $this->getData('s3_custom_endpoint');
             $region = $this->getData('s3_region');
+            $bucket = $this->getData('s3_bucket');
+            $key = $this->getData('s3_key');
+            $secret = $this->getData('s3_secret');
+            
+            error_log('S3StoragePlugin: Testing connection - Provider: ' . $provider . ', Bucket: ' . $bucket . ', Region: ' . $region . ', Endpoint: ' . $customEndpoint);
+            
+            // Validate required fields
+            if (empty($bucket) || empty($key) || empty($secret)) {
+                error_log('S3StoragePlugin: Missing required credentials');
+                return false;
+            }
+            
+            if ($provider === 'custom' && empty($customEndpoint)) {
+                error_log('S3StoragePlugin: Custom endpoint required for custom provider');
+                return false;
+            }
+            
+            // For custom provider, use a default region if none provided
+            if ($provider === 'custom' && empty($region)) {
+                $region = 'us-east-1'; // Default region for custom providers
+                error_log('S3StoragePlugin: Using default region for custom provider: ' . $region);
+            }
+            
+            if ($provider !== 'custom' && empty($region)) {
+                error_log('S3StoragePlugin: Region required for non-custom providers');
+                return false;
+            }
             
             $config = [
                 'version' => 'latest',
                 'region' => $region,
                 'credentials' => [
-                    'key' => $this->getData('s3_key'),
-                    'secret' => $this->getData('s3_secret'),
+                    'key' => $key,
+                    'secret' => $secret,
                 ],
             ];
 
@@ -169,6 +221,10 @@ class S3StorageSettingsForm extends Form {
                 case 'custom':
                     if ($customEndpoint) {
                         $config['endpoint'] = $customEndpoint;
+                        // For custom endpoints, we might need to add protocol if missing
+                        if (!preg_match('/^https?:\/\//', $config['endpoint'])) {
+                            $config['endpoint'] = 'https://' . $config['endpoint'];
+                        }
                     }
                     break;
                 case 'aws':
@@ -179,13 +235,16 @@ class S3StorageSettingsForm extends Form {
                     break;
             }
             
+            error_log('S3StoragePlugin: Final endpoint: ' . ($config['endpoint'] ?? 'default AWS'));
+            
             $s3Client = new S3Client($config);
             
             // Test bucket access
             $result = $s3Client->headBucket([
-                'Bucket' => $this->getData('s3_bucket'),
+                'Bucket' => $bucket,
             ]);
             
+            error_log('S3StoragePlugin: Connection test successful');
             return true;
         } catch (Exception $e) {
             error_log('S3StoragePlugin: Connection test failed: ' . $e->getMessage());

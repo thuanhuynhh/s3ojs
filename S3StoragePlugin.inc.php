@@ -13,6 +13,10 @@
  */
 
 import('lib.pkp.classes.plugins.GenericPlugin');
+import('lib.pkp.classes.core.JSONMessage');
+import('classes.template.TemplateManager');
+import('lib.pkp.classes.linkAction.LinkAction');
+import('lib.pkp.classes.linkAction.request.AjaxModal');
 require_once(dirname(__FILE__) . '/vendor/aws/aws-autoloader.php');
 
 class S3StoragePlugin extends GenericPlugin {
@@ -48,6 +52,14 @@ class S3StoragePlugin extends GenericPlugin {
     }
 
     /**
+     * Get the name of this plugin.
+     * @return String
+     */
+    public function getName() {
+        return 's3ojs';
+    }
+
+    /**
      * Get a description of the plugin.
      * @return String
      */
@@ -65,7 +77,6 @@ class S3StoragePlugin extends GenericPlugin {
         }
         
         $router = $request->getRouter();
-        import('lib.pkp.classes.linkAction.request.AjaxModal');
         $actions[] = new LinkAction(
             'settings',
             new AjaxModal(
@@ -83,9 +94,12 @@ class S3StoragePlugin extends GenericPlugin {
      * @copydoc Plugin::manage()
      */
     public function manage($args, $request) {
+        error_log('S3StoragePlugin: manage() called with verb: ' . $request->getUserVar('verb'));
+        
         switch ($request->getUserVar('verb')) {
             case 'settings':
                 $context = $request->getContext();
+                import('classes.i18n.AppLocale');
                 AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON,  LOCALE_COMPONENT_PKP_MANAGER);
                 $templateMgr = TemplateManager::getManager($request);
                 $templateMgr->registerPlugin('function', 'plugin_url', array($this, 'smartyPluginUrl'));
@@ -99,10 +113,12 @@ class S3StoragePlugin extends GenericPlugin {
                         $form->execute();
                         return new JSONMessage(true);
                     }
+                    // If validation failed, return form with errors
+                    return new JSONMessage(true, $form->fetch($request));
                 } else {
                     $form->initData();
+                    return new JSONMessage(true, $form->fetch($request));
                 }
-                return new JSONMessage(true, $form->fetch($request));
                 
             case 'sync':
                 return $this->handleSync($request);
@@ -111,6 +127,7 @@ class S3StoragePlugin extends GenericPlugin {
                 return $this->handleCleanup($request);
                 
             case 'testConnection':
+                error_log('S3StoragePlugin: testConnection case reached');
                 return $this->handleTestConnection($request);
                 
             case 'stats':
@@ -126,27 +143,37 @@ class S3StoragePlugin extends GenericPlugin {
      */
     private function handleSync($request) {
         $context = $request->getContext();
+        $this->import('S3FileManager');
         $fileManager = $this->getS3FileManager($context->getId());
         
         if (!$fileManager) {
-            return new JSONMessage(false, __('plugins.generic.s3Storage.sync.failed'));
+            $errorMessage = 'Sync failed: S3FileManager could not be initialized. Check settings.';
+            error_log('S3StoragePlugin: ' . $errorMessage);
+            return new JSONMessage(false, $errorMessage);
         }
         
         // Get local files directory
         $filesDir = Config::getVar('files', 'files_dir') . '/journals/' . $context->getId();
-        
+        error_log('S3StoragePlugin: Starting sync for directory: ' . $filesDir);
+
         if (!is_dir($filesDir)) {
-            return new JSONMessage(false, __('plugins.generic.s3Storage.sync.failed'));
+            $errorMessage = 'Sync failed: Local files directory does not exist: ' . $filesDir;
+            error_log('S3StoragePlugin: ' . $errorMessage);
+            return new JSONMessage(false, $errorMessage);
         }
         
         // Perform sync
         $results = $fileManager->syncToCloud($filesDir);
         
         if ($results['failed'] > 0) {
-            return new JSONMessage(false, __('plugins.generic.s3Storage.sync.failed') . ': ' . implode(', ', $results['errors']));
+            $errorMessage = __('plugins.generic.s3Storage.sync.failed') . ': ' . implode(', ', $results['errors']);
+            error_log('S3StoragePlugin: Sync process reported failures. Details: ' . json_encode($results));
+            return new JSONMessage(false, $errorMessage);
         }
         
-        return new JSONMessage(true, __('plugins.generic.s3Storage.sync.completed') . " ({$results['success']} files synced)");
+        $successMessage = __('plugins.generic.s3Storage.sync.completed') . " ({$results['success']} files synced)";
+        error_log('S3StoragePlugin: Sync completed successfully. Details: ' . json_encode($results));
+        return new JSONMessage(true, $successMessage);
     }
 
     /**
@@ -156,23 +183,32 @@ class S3StoragePlugin extends GenericPlugin {
      */
     private function handleCleanup($request) {
         $context = $request->getContext();
+        $this->import('S3FileManager');
         $fileManager = $this->getS3FileManager($context->getId());
         
         if (!$fileManager) {
-            return new JSONMessage(false, __('plugins.generic.s3Storage.cleanup.failed'));
+            $errorMessage = 'Cleanup failed: S3FileManager could not be initialized. Check settings.';
+            error_log('S3StoragePlugin: ' . $errorMessage);
+            return new JSONMessage(false, $errorMessage);
         }
         
-        // Get valid files from database (implement based on OJS structure)
+        // Get valid files from database
+        error_log('S3StoragePlugin: Starting cleanup. Fetching valid file list from database.');
         $validFiles = $this->getValidFilesFromDatabase($context);
+        error_log('S3StoragePlugin: Found ' . count($validFiles) . ' valid files in the database.');
         
         // Perform cleanup
         $results = $fileManager->cleanupOrphanedFiles($validFiles);
         
         if (!empty($results['errors'])) {
-            return new JSONMessage(false, __('plugins.generic.s3Storage.cleanup.failed') . ': ' . implode(', ', $results['errors']));
+            $errorMessage = __('plugins.generic.s3Storage.cleanup.failed') . ': ' . implode(', ', $results['errors']);
+            error_log('S3StoragePlugin: Cleanup process reported failures. Details: ' . json_encode($results));
+            return new JSONMessage(false, $errorMessage);
         }
         
-        return new JSONMessage(true, __('plugins.generic.s3Storage.cleanup.completed') . " ({$results['deleted']} files cleaned)");
+        $successMessage = __('plugins.generic.s3Storage.cleanup.completed') . " ({$results['deleted']} files cleaned)";
+        error_log('S3StoragePlugin: Cleanup completed successfully. Details: ' . json_encode($results));
+        return new JSONMessage(true, $successMessage);
     }
 
     /**
@@ -183,26 +219,39 @@ class S3StoragePlugin extends GenericPlugin {
     private function handleTestConnection($request) {
         $contextId = $request->getContext()->getId();
         
-        // Get settings from request or stored settings
-        $bucket = $request->getUserVar('s3_bucket') ?: $this->getSetting($contextId, 's3_bucket');
-        $key = $request->getUserVar('s3_key') ?: $this->getSetting($contextId, 's3_key');
-        $secret = $request->getUserVar('s3_secret') ?: $this->getSetting($contextId, 's3_secret');
-        $region = $request->getUserVar('s3_region') ?: $this->getSetting($contextId, 's3_region');
-        $provider = $request->getUserVar('s3_provider') ?: $this->getSetting($contextId, 's3_provider');
-        $customEndpoint = $request->getUserVar('s3_custom_endpoint') ?: $this->getSetting($contextId, 's3_custom_endpoint');
+        // Get settings from the form submission for the test
+        $bucket = $request->getUserVar('s3_bucket');
+        $key = $request->getUserVar('s3_key');
+        $secret = $request->getUserVar('s3_secret');
+        $region = $request->getUserVar('s3_region');
+        $provider = $request->getUserVar('s3_provider');
+        $customEndpoint = $request->getUserVar('s3_custom_endpoint');
         
+        // For custom provider, if region is not provided, use a default one
+        // as it's required by the AWS SDK.
+        if ($provider === 'custom' && empty($region)) {
+            $region = 'us-east-1'; // A common default
+        }
+
+        error_log('S3StoragePlugin: Testing connection with params - Provider: ' . $provider . ', Region: ' . $region . ', Endpoint: ' . $customEndpoint);
+
         try {
             $this->import('S3FileManager');
             $fileManager = new S3FileManager($bucket, $key, $secret, $region, $provider, $customEndpoint, false, false);
             
-            if ($fileManager->testConnection()) {
-                return new JSONMessage(true, array('status' => true));
+            $connectionResult = $fileManager->testConnection();
+
+            if ($connectionResult === true) {
+                return new JSONMessage(true, ['status' => true, 'message' => __('plugins.generic.s3Storage.settings.connectionTest.success')]);
             } else {
-                return new JSONMessage(true, array('status' => false));
+                // Failure, $connectionResult contains the error message string
+                error_log('S3StoragePlugin: handleTestConnection failed. Reason: ' . $connectionResult);
+                return new JSONMessage(true, ['status' => false, 'message' => $connectionResult]);
             }
         } catch (Exception $e) {
-            error_log('S3StoragePlugin: Connection test failed: ' . $e->getMessage());
-            return new JSONMessage(true, array('status' => false));
+            $errorMessage = 'Connection test threw a fatal exception: ' . $e->getMessage();
+            error_log('S3StoragePlugin: ' . $errorMessage);
+            return new JSONMessage(true, ['status' => false, 'message' => $errorMessage]);
         }
     }
 
@@ -258,10 +307,23 @@ class S3StoragePlugin extends GenericPlugin {
         $hybridMode = $this->getSetting($contextId, 's3_hybrid_mode');
         $fallbackEnabled = $this->getSetting($contextId, 's3_fallback_enabled');
         
-        if (!$bucket || !$key || !$secret || !$region) {
+        // Basic credentials check
+        if (empty($bucket) || empty($key) || empty($secret)) {
+            error_log('S3StoragePlugin: Cannot initialize S3FileManager - missing bucket, key, or secret.');
+            return null;
+        }
+
+        // Region is required for all providers except 'custom'
+        if ($provider !== 'custom' && empty($region)) {
+            error_log('S3StoragePlugin: Cannot initialize S3FileManager - region is required for provider "' . $provider . '".');
             return null;
         }
         
+        // For custom provider, if region is not provided, use a default one.
+        if ($provider === 'custom' && empty($region)) {
+            $region = 'us-east-1'; // A common default
+        }
+
         $this->import('S3FileManager');
         return new S3FileManager($bucket, $key, $secret, $region, $provider, $customEndpoint, $hybridMode, $fallbackEnabled);
     }
@@ -356,5 +418,4 @@ class S3StoragePlugin extends GenericPlugin {
     public function getInstallEmailTemplateDataFile() {
         return ($this->getPluginPath() . '/locale/{$installedLocale}/emailTemplates.xml');
     }
-} 
 } 

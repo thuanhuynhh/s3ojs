@@ -10,7 +10,7 @@
   * Plugin version information.
   -->
 <version>
-	<application>s3Storage</application>
+	<application>s3ojs</application>
 	<type>plugins.generic</type>
 	<release>1.0.0.0</release>
 	<date>2025-06-06</date>

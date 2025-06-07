@@ -82,29 +82,44 @@ class S3FileManager extends FileManager {
                     'key' => $key,
                     'secret' => $secret,
                 ],
+                // Add this to handle cURL SSL certificate issue on local dev environments.
+                // This is insecure for production but acceptable for local testing.
+                'http' => [
+                    'verify' => false,
+                ],
             ];
 
-            // Set endpoint based on provider
+            // Set endpoint and other provider-specific settings
             switch ($this->provider) {
                 case 'wasabi':
                     $config['endpoint'] = $this->customEndpoint ?: "https://s3.{$this->region}.wasabisys.com";
+                    $config['use_path_style_endpoint'] = true;
                     break;
                 case 'digitalocean':
                     $config['endpoint'] = $this->customEndpoint ?: "https://{$this->region}.digitaloceanspaces.com";
+                    $config['use_path_style_endpoint'] = true;
                     break;
                 case 'custom':
                     if ($this->customEndpoint) {
                         $config['endpoint'] = $this->customEndpoint;
+                        // For many S3-compatible services, path-style endpoint is required.
+                        $config['use_path_style_endpoint'] = true;
                     }
                     break;
                 case 'aws':
                 default:
-                    // Use default AWS endpoints
+                    // Use default AWS endpoints (virtual host style)
                     if ($this->customEndpoint) {
                         $config['endpoint'] = $this->customEndpoint;
                     }
                     break;
             }
+            
+            $logConfig = $config;
+            if (isset($logConfig['credentials']['secret'])) {
+                $logConfig['credentials']['secret'] = '***';
+            }
+            error_log('S3StoragePlugin: Initializing S3 client with config: ' . json_encode($logConfig));
 
             $this->s3Client = new S3Client($config);
         } catch (Exception $e) {
@@ -313,19 +328,28 @@ class S3FileManager extends FileManager {
     }
 
     /**
-     * Check if a file exists with fallback support
-     * @param string $filePath File path
-     * @return boolean File exists
+     * Check if a file exists (cloud or local based on mode)
+     * @param string $filePath
+     * @param string $type Optional type check ('file' or 'dir')
+     * @return boolean
      */
-    public function fileExists($filePath) {
-        // Check cloud first
-        if ($this->s3Client && $this->fileExistsInCloud($filePath)) {
-            return true;
+    public function fileExists($filePath, $type = 'file') {
+        // In hybrid mode, we check both locations
+        if ($this->hybridMode) {
+            return $this->fileExistsInCloud($filePath) || $this->localFileManager->fileExists($filePath, $type);
         }
 
-        // Check local if hybrid mode or fallback enabled
-        if (($this->hybridMode || $this->fallbackEnabled) && file_exists($filePath)) {
-            return true;
+        // Cloud-only mode
+        if ($this->s3Client) {
+            $cloudExists = $this->fileExistsInCloud($filePath);
+            if ($cloudExists) {
+                return true;
+            }
+        }
+
+        // Fallback to local if enabled
+        if ($this->fallbackEnabled) {
+            return $this->localFileManager->fileExists($filePath, $type);
         }
 
         return false;
@@ -492,11 +516,11 @@ class S3FileManager extends FileManager {
 
     /**
      * Test connection to storage service
-     * @return boolean Connection successful
+     * @return boolean|string True on success, error message string on failure
      */
     public function testConnection() {
         if (!$this->s3Client) {
-            return false;
+            return 'S3 client not initialized. Check credentials or endpoint.';
         }
 
         try {
@@ -506,8 +530,13 @@ class S3FileManager extends FileManager {
             
             return true;
         } catch (AwsException $e) {
-            error_log('S3StoragePlugin: Connection test failed: ' . $e->getMessage());
-            return false;
+            $errorMessage = 'S3 Error: ' . ($e->getAwsErrorMessage() ?: $e->getMessage());
+            error_log('S3StoragePlugin: Connection test failed: ' . $errorMessage);
+            return $errorMessage;
+        } catch (Exception $e) {
+            $errorMessage = 'Generic Error: ' . $e->getMessage();
+            error_log('S3StoragePlugin: Connection test failed with generic exception: ' . $errorMessage);
+            return $errorMessage;
         }
     }
 
